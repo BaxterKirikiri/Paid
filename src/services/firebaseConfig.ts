@@ -15,26 +15,11 @@ const firebaseConfig = {
 
   const db = firebase.firestore();
 
-  export const updateAmountPaid = (name : string, amountPaid: number) => {
-      return db.collection("Payees").doc(name).update({
-          AmountPaid: amountPaid
-      });
+  export const updatePayee = (payeeName: string, payeeDoc: object) => {
+      return db.collection("Payees").doc(payeeName).set(payeeDoc);
   }
-  export const updateWeeklyRate = (name : string, weeklyRate: number) => {
-    return db.collection("Payees").doc(name).update({
-        WeeklyRate: weeklyRate
-    });
+  export const getPayee = (payeeName: string) => {
+      return db.collection("Payees").doc(payeeName).get();
   }
-  export const updateWeeksPaid = (name : string, weeksPaid: number) => {
-    return db.collection("Payees").doc(name).update({
-        WeeksPaid: weeksPaid
-    });
-  }
-  export const updateLastPaid = (name : string, lastPaid: string) => {
-    return db.collection("Payees").doc(name).update({
-        LastPaid: lastPaid
-    });
-  }
-  
   export default firebase;
 

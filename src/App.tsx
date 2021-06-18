@@ -3,41 +3,52 @@ import * as Firestore from './services/firebaseConfig';
 import './App.css';
 
 function App() {
-  const Payee = "Blaine";
-  const [amountPaid, setAmountPaid] = React.useState(0);
-  const [weeksPaid, setWeeksPaid] = React.useState(0);
-  const [lastPaid, setLastPaid] = React.useState("Never Paid");
-  const [weeklyRate, setWeeklyRate] = React.useState(0);
+  const [payee, setPayee] = React.useState("Blaine");
+  const [payeeDoc, setPayeeDoc] = React.useState({
+    AmountPaid: 0,
+    LastPaid: "Never Paid",
+    WeeklyRate: 0,
+    WeeksPaid: 0
+  });
 
   const handlePayment = (weeks : number) => () => {
-    setAmountPaid(amountPaid + (weeklyRate * weeks));
-    setWeeksPaid(weeksPaid + weeks);
-    setLastPaid(Date().toLocaleString());
+    setPayeeDoc({
+      AmountPaid: payeeDoc.AmountPaid + (payeeDoc.WeeklyRate * weeks),
+      LastPaid: Date().toLocaleString(),
+      WeeklyRate: payeeDoc.WeeklyRate,
+      WeeksPaid: payeeDoc.WeeksPaid + weeks
+    });
   };
 
   const handleWorked = () => {
-    setWeeksPaid(weeksPaid - 1);
+    setPayeeDoc({
+      AmountPaid: payeeDoc.AmountPaid,
+      LastPaid: payeeDoc.LastPaid,
+      WeeklyRate: payeeDoc.WeeklyRate,
+      WeeksPaid: payeeDoc.WeeksPaid - 1
+    });
   }
 
   const handleWeeklyRate = (e: React.FormEvent<HTMLInputElement>) => {
-    setWeeklyRate(Number(e.currentTarget.value));
-    
+    setPayeeDoc({
+      AmountPaid: payeeDoc.AmountPaid,
+      LastPaid: payeeDoc.LastPaid,
+      WeeklyRate: Number(e.currentTarget.value),
+      WeeksPaid: payeeDoc.WeeksPaid
+    });
   }
 
   useEffect(() => {
-    Firestore.updateAmountPaid(Payee, amountPaid);
-    Firestore.updateWeeksPaid(Payee, weeksPaid);
-    Firestore.updateLastPaid(Payee, lastPaid)
-    Firestore.updateWeeksPaid(Payee, weeksPaid);
-    Firestore.updateWeeklyRate(Payee, weeklyRate);
-  }, [amountPaid, weeklyRate, weeksPaid, lastPaid]);
+    Firestore.updatePayee(payee, payeeDoc); 
+  }, [payeeDoc]);
 
   return (
     <div>
-      <h1>Ammount Paid:{amountPaid}</h1>
-      <h1>Weeks Paid:{weeksPaid}</h1>
-      <h1>Last Paid:{lastPaid}</h1>
-      <input type="number" value={weeklyRate} onChange={e => handleWeeklyRate(e) }></input>
+      <h1>Current Payee:{payee}</h1>
+      <h1>Ammount Paid:{payeeDoc.AmountPaid}</h1>
+      <h1>Weeks Paid:{payeeDoc.WeeksPaid}</h1>
+      <h1>Last Paid:{payeeDoc.LastPaid}</h1>
+      <input type="number" value={payeeDoc.WeeklyRate} onChange={e => handleWeeklyRate(e) }></input>
       <button onClick={handlePayment(2)}>Pay For Two Weeks</button>
       <button onClick={handleWorked}>Confirm Worked</button>
     </div>
