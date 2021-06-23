@@ -1,56 +1,91 @@
 import React, { useEffect } from 'react';
+import firebase from 'firebase';
 import * as Firestore from './services/firebaseConfig';
 import './App.css';
 
-function App() {
-  const [payee, setPayee] = React.useState("Blaine");
-  const [payeeDoc, setPayeeDoc] = React.useState({
-    AmountPaid: 0,
-    LastPaid: "Never Paid",
-    WeeklyRate: 0,
-    WeeksPaid: 0
-  });
+interface IPayeeInfo{
+  AmountPaid: number,
+  LastPaid: string,
+  WeeklyRate: number,
+  WeeksPaid: number
+}
 
-  const handlePayment = (weeks : number) => () => {
-    setPayeeDoc({
-      AmountPaid: payeeDoc.AmountPaid + (payeeDoc.WeeklyRate * weeks),
-      LastPaid: Date().toLocaleString(),
-      WeeklyRate: payeeDoc.WeeklyRate,
-      WeeksPaid: payeeDoc.WeeksPaid + weeks
+var PayeeInfoConverter = {
+  toFirestore: (data: IPayeeInfo) => data,
+  fromFirestore: (snapshot: firebase.firestore.QueryDocumentSnapshot, options: firebase.firestore.SnapshotOptions) => {
+    const data = snapshot.data(options);
+    return data as IPayeeInfo;
+  }
+}
+
+function App() {
+  const [payeeDoc, setPayeeDoc] = React.useState<any | undefined>();
+  const payee = "Blaine";
+
+  useEffect(() => {
+    if (!payeeDoc) {
+      Firestore.getPayee(payee, PayeeInfoConverter).then(
+        (doc) => {
+          if (doc.exists) {
+            var payeeInfo = doc.data() as IPayeeInfo;
+            setPayeeDoc(payeeInfo);
+          } else {
+            console.log("No such payee");
+          }
+        }
+      ).catch((error) => {
+        console.log("Error getting document:", error)
+      })
+    }
+  }, [payeeDoc]);
+
+  const handlePayment = (weeks: number) => () => {
+    setPayeeDoc((prevState: IPayeeInfo) => {
+      return {
+        ...prevState,
+        AmountPaid: prevState.AmountPaid + (prevState.WeeklyRate * weeks),
+        LastPaid: Date().toLocaleString(),
+        WeeksPaid: prevState.WeeksPaid + weeks
+      }
     });
   };
 
   const handleWorked = () => {
-    setPayeeDoc({
-      AmountPaid: payeeDoc.AmountPaid,
-      LastPaid: payeeDoc.LastPaid,
-      WeeklyRate: payeeDoc.WeeklyRate,
-      WeeksPaid: payeeDoc.WeeksPaid - 1
+    setPayeeDoc((prevState: IPayeeInfo) => {
+      return {
+        ...prevState,
+        WeeksPaid: prevState.WeeksPaid - 1
+      }
     });
   }
 
   const handleWeeklyRate = (e: React.FormEvent<HTMLInputElement>) => {
-    setPayeeDoc({
-      AmountPaid: payeeDoc.AmountPaid,
-      LastPaid: payeeDoc.LastPaid,
-      WeeklyRate: Number(e.currentTarget.value),
-      WeeksPaid: payeeDoc.WeeksPaid
+    setPayeeDoc((prevState: IPayeeInfo) => {
+      return {
+        ...prevState,
+        WeeklyRate: Number(e.currentTarget.value)
+      }
     });
   }
 
   useEffect(() => {
-    Firestore.updatePayee(payee, payeeDoc); 
-  }, [payeeDoc]);
+    if (payeeDoc) {
+      Firestore.updatePayeeDoc(payee, payeeDoc, PayeeInfoConverter);
+    }
+  }, [payeeDoc])
 
   return (
     <div>
-      <h1>Current Payee:{payee}</h1>
-      <h1>Ammount Paid:{payeeDoc.AmountPaid}</h1>
-      <h1>Weeks Paid:{payeeDoc.WeeksPaid}</h1>
-      <h1>Last Paid:{payeeDoc.LastPaid}</h1>
-      <input type="number" value={payeeDoc.WeeklyRate} onChange={e => handleWeeklyRate(e) }></input>
-      <button onClick={handlePayment(2)}>Pay For Two Weeks</button>
-      <button onClick={handleWorked}>Confirm Worked</button>
+      {!payeeDoc && <h1>Loading...</h1>}
+      {payeeDoc && <div>
+        <h1>Current Payee:{payee}</h1>
+        <h1>Ammount Paid:{payeeDoc.AmountPaid}</h1>
+        <h1>Weeks Paid:{payeeDoc.WeeksPaid}</h1>
+        <h1>Last Paid:{payeeDoc.LastPaid}</h1>
+        <input type="number" value={payeeDoc.WeeklyRate} onChange={e => handleWeeklyRate(e)}></input>
+        <button onClick={handlePayment(2)}>Pay For Two Weeks</button>
+        <button onClick={handleWorked}>Confirm Worked</button>
+      </div>}
     </div>
   );
 }

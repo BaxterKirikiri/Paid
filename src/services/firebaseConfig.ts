@@ -13,13 +13,13 @@ const firebaseConfig = {
 
   firebase.initializeApp(firebaseConfig);
 
-  const db = firebase.firestore();
+  export const db = firebase.firestore();
 
-  export const updatePayee = (payeeName: string, payeeDoc: object) => {
-      return db.collection("Payees").doc(payeeName).set(payeeDoc);
+  export const updatePayeeDoc = (payeeName: string, payeeDoc: object, converter: any) => {
+      return db.collection("Payees").doc(payeeName).withConverter(converter).set(payeeDoc);
   }
-  export const getPayee = (payeeName: string) => {
-      return db.collection("Payees").doc(payeeName).get();
+  export const getPayee = (payeeName: string, converter: any) => {
+      return db.collection("Payees").doc(payeeName).withConverter(converter).get();
   }
   export default firebase;
 
